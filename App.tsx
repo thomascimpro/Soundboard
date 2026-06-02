@@ -12,6 +12,7 @@ import {
   GestureResponderEvent,
   Image,
   ImageBackground,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -65,7 +66,7 @@ type ExportedSoundboard = {
   };
 };
 
-type MyInstantsSearchResult = {
+type SearchSoundResult = {
   id: string;
   name: string;
   pageUrl: string;
@@ -145,6 +146,59 @@ const createId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 10)}
 const trimName = (value: string) => value.trim().replace(/\s+/g, ' ');
 
 const normalizeSoundName = (value: string) => trimName(value).toLowerCase();
+
+const normalizeSearchKey = (value: string) =>
+  normalizeSoundName(value)
+    .replace(/\.(mp3|m4a|aac|wav|ogg|opus|flac)\b/g, '')
+    .replace(/\b(sound|sounds|soundss|effect|effects|sfx|audio)\b/g, '')
+    .replace(/[^a-z0-9]+/g, '');
+
+const normalizeSearchUrl = (value?: string) => {
+  if (!value) {
+    return '';
+  }
+
+  try {
+    const url = new URL(value);
+    url.hash = '';
+    return url.toString().replace(/\/$/, '').toLowerCase();
+  } catch {
+    return value.trim().replace(/\/$/, '').toLowerCase();
+  }
+};
+
+const getSimilarSearchQuery = (query: string) => {
+  const words = normalizeSoundName(query)
+    .replace(/\b(sound|sounds|soundss|effect|effects|sfx|audio|meme|mp3)\b/g, ' ')
+    .split(/\s+/)
+    .map((word) => word.trim())
+    .filter((word) => word.length >= 3);
+
+  if (words.length === 0) {
+    return '';
+  }
+
+  return words.slice(0, 2).join(' ');
+};
+
+const getSearchFallbackQueries = (query: string) => {
+  const normalizedQuery = normalizeSoundName(query);
+  const queries = new Set<string>();
+  const similarQuery = getSimilarSearchQuery(query);
+
+  if (similarQuery && similarQuery !== normalizedQuery) {
+    queries.add(similarQuery);
+  }
+
+  const words = normalizedQuery.split(/\s+/).filter(Boolean);
+  const lastWord = words.at(-1);
+
+  if (lastWord && lastWord.length > 3 && lastWord.endsWith('s')) {
+    queries.add([...words.slice(0, -1), lastWord.slice(0, -1)].join(' '));
+  }
+
+  return [...queries];
+};
 
 const getSoundDirectory = () => new Directory(Paths.document, 'sounds');
 
@@ -334,9 +388,13 @@ const resolveAudioUrl = async (rawUrl: string) => {
   return null;
 };
 
-const searchMyInstants = async (query: string): Promise<MyInstantsSearchResult[]> => {
+const searchMyInstants = async (query: string): Promise<SearchSoundResult[]> => {
   const searchUrl = `https://www.myinstants.com/en/search/?name=${encodeURIComponent(query)}`;
   const response = await fetch(searchUrl);
+
+  if (response.status === 404) {
+    return [];
+  }
 
   if (!response.ok) {
     throw new Error('Search failed.');
@@ -345,7 +403,7 @@ const searchMyInstants = async (query: string): Promise<MyInstantsSearchResult[]
   const html = await response.text();
   const matches = html.matchAll(/href=["']([^"']*\/instant\/[^"']+)["']/gi);
   const seenUrls = new Set<string>();
-  const results: MyInstantsSearchResult[] = [];
+  const results: SearchSoundResult[] = [];
 
   for (const match of matches) {
     try {
@@ -374,6 +432,40 @@ const searchMyInstants = async (query: string): Promise<MyInstantsSearchResult[]
   return results;
 };
 
+const searchSoundSources = async (query: string) => {
+  return searchMyInstants(query);
+};
+
+const dedupeSearchResults = (results: SearchSoundResult[], existingSounds: Sound[]) => {
+  const existingNames = new Set(existingSounds.map((sound) => normalizeSearchKey(sound.name)));
+  const existingUrls = new Set(existingSounds.map((sound) => normalizeSearchUrl(sound.uri)).filter(Boolean));
+  const seenNames = new Set<string>();
+  const seenUrls = new Set<string>();
+  const seenIds = new Set<string>();
+
+  return results.filter((result) => {
+    const nameKey = normalizeSearchKey(result.name);
+    const urlKey = normalizeSearchUrl(result.pageUrl);
+
+    if (!nameKey || seenIds.has(result.id) || existingNames.has(nameKey) || seenNames.has(nameKey)) {
+      return false;
+    }
+
+    if (urlKey && (existingUrls.has(urlKey) || seenUrls.has(urlKey))) {
+      return false;
+    }
+
+    seenIds.add(result.id);
+    seenNames.add(nameKey);
+
+    if (urlKey) {
+      seenUrls.add(urlKey);
+    }
+
+    return true;
+  });
+};
+
 export default function App() {
   const { width: windowWidth } = useWindowDimensions();
   const [boards, setBoards] = useState<Soundboard[]>([]);
@@ -385,7 +477,10 @@ export default function App() {
   const [soundName, setSoundName] = useState('');
   const [soundUrl, setSoundUrl] = useState('');
   const [soundSearchQuery, setSoundSearchQuery] = useState('');
-  const [soundSearchResults, setSoundSearchResults] = useState<MyInstantsSearchResult[]>([]);
+  const [soundSearchFeedback, setSoundSearchFeedback] = useState('');
+  const [soundSearchResults, setSoundSearchResults] = useState<SearchSoundResult[]>([]);
+  const [isManageSoundsOpen, setIsManageSoundsOpen] = useState(false);
+  const [actionNotice, setActionNotice] = useState('');
   const [isLoaded, setIsLoaded] = useState(false);
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [playingSoundId, setPlayingSoundId] = useState<string | null>(null);
@@ -396,6 +491,7 @@ export default function App() {
   const detailScrollRef = useRef<ScrollView | null>(null);
   const volumeTrackRef = useRef<View | null>(null);
   const volumeTrackMetricsRef = useRef({ width: 1, x: 0 });
+  const actionNoticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const visibleBoards = useMemo(() => boards, [boards]);
   const totalSoundCount = useMemo(
@@ -457,6 +553,10 @@ export default function App() {
     loadBoards();
 
     return () => {
+      if (actionNoticeTimerRef.current) {
+        clearTimeout(actionNoticeTimerRef.current);
+      }
+
       playerRef.current?.release();
     };
   }, []);
@@ -476,6 +576,12 @@ export default function App() {
       playerRef.current.volume = volume;
     }
   }, [volume]);
+
+  useEffect(() => {
+    if (boardMode === 'edit') {
+      setIsManageSoundsOpen(false);
+    }
+  }, [boardMode, selectedBoardId]);
 
   useEffect(() => {
     if (!playingSoundId) {
@@ -540,11 +646,22 @@ export default function App() {
     updateBoard(selectedBoardId, (board) => ({ ...board, sounds: [sound, ...board.sounds] }));
     setSoundName('');
     setSoundUrl('');
+    setActionNotice('Added');
+
+    if (actionNoticeTimerRef.current) {
+      clearTimeout(actionNoticeTimerRef.current);
+    }
+
+    actionNoticeTimerRef.current = setTimeout(() => {
+      setActionNotice('');
+      actionNoticeTimerRef.current = null;
+    }, 1400);
   };
 
   const openBoard = (boardId: string) => {
     setSelectedBoardId(boardId);
     setBoardMode('play');
+    setIsManageSoundsOpen(false);
   };
 
   const closeBoard = () => {
@@ -646,10 +763,7 @@ export default function App() {
   };
 
   const importSoundFromDevice = async () => {
-    const name = trimName(soundName);
-
-    if (!selectedBoardId || !name) {
-      Alert.alert('Sound name required', 'Enter a sound name before importing.');
+    if (!selectedBoardId) {
       return;
     }
 
@@ -668,6 +782,8 @@ export default function App() {
 
       const asset = result.assets[0];
       const extension = getExtension(asset.name) || '.audio';
+      const pickedName = trimName(asset.name.replace(/\.[^/.]+$/, ''));
+      const name = pickedName || 'Imported sound';
       const soundDirectory = getSoundDirectory();
 
       if (!soundDirectory.exists) {
@@ -735,26 +851,74 @@ export default function App() {
       return;
     }
 
+    Keyboard.dismiss();
     setBusyAction('search');
+    setSoundSearchFeedback('');
 
     try {
-      const results = await searchMyInstants(query);
-      const existingSoundNames = new Set((selectedBoard?.sounds ?? []).map((sound) => normalizeSoundName(sound.name)));
-      const availableResults = results.filter((result) => !existingSoundNames.has(normalizeSoundName(result.name)));
+      let results = await searchSoundSources(query);
+      let feedback = '';
+
+      if (results.length === 0) {
+        for (const fallbackQuery of getSearchFallbackQueries(query)) {
+          results = await searchSoundSources(fallbackQuery);
+
+          if (results.length > 0) {
+            feedback = `No exact results for "${query}". Showing similar results for "${fallbackQuery}".`;
+            break;
+          }
+        }
+      }
+
+      const availableResults = dedupeSearchResults(results, selectedBoard?.sounds ?? []).slice(0, 24);
 
       setSoundSearchResults(availableResults);
 
       if (availableResults.length === 0) {
-        Alert.alert('No new results', 'All matching sounds are already in this board or no sounds were found.');
+        const message =
+          results.length > 0
+            ? 'All found sounds are already in this board.'
+            : `No soundboard sounds found for "${query}". Try a shorter name, another meme keyword, or paste a URL.`;
+        setSoundSearchFeedback(message);
+        Alert.alert('No results', message);
+        return;
       }
+
+      setSoundSearchFeedback(feedback || `${availableResults.length} sounds found.`);
     } catch {
-      Alert.alert('Search failed', 'Could not search sounds right now.');
+      const message = 'Could not search sounds right now. Try again or paste a URL.';
+      setSoundSearchFeedback(message);
+      Alert.alert('Search failed', message);
     } finally {
       setBusyAction(null);
     }
   };
 
-  const addSoundFromSearchResult = async (result: MyInstantsSearchResult) => {
+  const previewSearchResult = async (result: SearchSoundResult) => {
+    setBusyAction(`search-preview:${result.id}`);
+
+    try {
+      const resolvedUrl = await resolveAudioUrl(result.pageUrl);
+
+      if (!resolvedUrl) {
+        Alert.alert('Preview unavailable', 'Could not find direct audio for this result.');
+        return;
+      }
+
+      playSound({
+        id: `preview:${result.id}`,
+        name: result.name,
+        source: 'url',
+        uri: resolvedUrl,
+      });
+    } catch {
+      Alert.alert('Preview failed', 'Could not preview this sound.');
+    } finally {
+      setBusyAction(null);
+    }
+  };
+
+  const addSoundFromSearchResult = async (result: SearchSoundResult) => {
     if (!selectedBoardId) {
       return;
     }
@@ -775,7 +939,16 @@ export default function App() {
         source: 'url',
         uri: resolvedUrl,
       });
-      setSoundSearchResults((currentResults) => currentResults.filter((item) => item.id !== result.id));
+      const addedName = normalizeSearchKey(result.name);
+      const addedUrl = normalizeSearchUrl(resolvedUrl);
+      setSoundSearchResults((currentResults) =>
+        currentResults.filter(
+          (item) =>
+            item.id !== result.id &&
+            normalizeSearchKey(item.name) !== addedName &&
+            (!addedUrl || normalizeSearchUrl(item.pageUrl) !== addedUrl),
+        ),
+      );
     } catch {
       Alert.alert('Add failed', 'Could not add this sound.');
     } finally {
@@ -846,8 +1019,14 @@ export default function App() {
 
   const showUrlHelp = () => {
     Alert.alert(
-      'URL help',
-      'Open a MyInstants sound page in your browser, copy the page link from the address bar, then paste it here. Direct .mp3, .wav, .ogg, .m4a, .aac, .opus, or .flac audio links also work.',
+      'Add sound help',
+      [
+        'Search: type a sound name and tap Search. Use Play to preview, then Add to save it.',
+        'Import file: tap Import file and browse to an audio file, for example in Downloads. The file name is used automatically.',
+        'MyInstants page URL: paste a MyInstants instant page link. The app finds the playable MP3 automatically.',
+        'Direct audio URL: paste a direct .mp3, .wav, .ogg, .m4a, .aac, .opus, or .flac link.',
+        'Sound name: only needed for Add URL. Search results and imported files use their own names.',
+      ].join('\n\n'),
     );
   };
 
@@ -1230,6 +1409,48 @@ export default function App() {
       return null;
     }
 
+    const renderManageSounds = () => (
+      <View style={styles.addPanel}>
+        <Pressable
+          accessibilityLabel="Manage sounds"
+          onPress={() => setIsManageSoundsOpen((isOpen) => !isOpen)}
+          style={styles.manageSoundsToggle}
+        >
+          <View>
+            <Text style={styles.sectionTitle}>Manage sounds</Text>
+            <Text style={styles.manageSoundsMeta}>
+              {selectedBoard.sounds.length} {selectedBoard.sounds.length === 1 ? 'sound' : 'sounds'}
+            </Text>
+          </View>
+          <Text style={styles.manageSoundsChevron}>{isManageSoundsOpen ? '^' : 'v'}</Text>
+        </Pressable>
+        {isManageSoundsOpen && (
+          selectedBoard.sounds.length === 0 ? (
+            <View style={styles.emptyPanel}>
+              <Text style={styles.emptyTitle}>No sounds</Text>
+            </View>
+          ) : (
+            <View style={styles.editList}>
+              {selectedBoard.sounds.map((sound) => (
+                <View key={sound.id} style={styles.editSoundItem}>
+                  <TextInput
+                    accessibilityLabel="Sound name"
+                    onChangeText={(value) => renameSound(sound.id, value)}
+                    placeholder="Sound name"
+                    style={[styles.input, styles.editSoundInput]}
+                    value={sound.name}
+                  />
+                  <Pressable onPress={() => deleteSound(sound)} style={styles.deleteButton}>
+                    <Text style={styles.deleteButtonText}>Delete</Text>
+                  </Pressable>
+                </View>
+              ))}
+            </View>
+          )
+        )}
+      </View>
+    );
+
     return (
       <View style={styles.detailScreen}>
       <ScrollView
@@ -1350,10 +1571,12 @@ export default function App() {
           </>
         ) : (
           <View>
+            {renderManageSounds()}
+
             <View style={styles.addPanel}>
                 <View style={styles.addPanelHeader}>
                   <Text style={styles.sectionTitle}>Add sound</Text>
-                  <Pressable accessibilityLabel="URL help" onPress={showUrlHelp} style={styles.infoButton}>
+                  <Pressable accessibilityLabel="Add sound help" onPress={showUrlHelp} style={styles.infoButton}>
                     <Text style={styles.infoButtonText}>i</Text>
                   </Pressable>
                 </View>
@@ -1361,11 +1584,15 @@ export default function App() {
                   accessibilityLabel="Search sounds"
                   autoCapitalize="none"
                   autoCorrect={false}
-                  onChangeText={setSoundSearchQuery}
+                  onChangeText={(value) => {
+                    setSoundSearchQuery(value);
+                    setSoundSearchFeedback('');
+                  }}
                   onSubmitEditing={searchSounds}
                   placeholder="Search sounds"
                   returnKeyType="search"
                   style={styles.input}
+                  submitBehavior="submit"
                   value={soundSearchQuery}
                 />
                 <Pressable
@@ -1375,35 +1602,42 @@ export default function App() {
                 >
                   <Text style={styles.secondaryButtonText}>{busyAction === 'search' ? 'Searching...' : 'Search'}</Text>
                 </Pressable>
+                {actionNotice ? <Text style={styles.actionNoticeText}>{actionNotice}</Text> : null}
+                {soundSearchFeedback ? <Text style={styles.searchFeedbackText}>{soundSearchFeedback}</Text> : null}
                 {soundSearchResults.length > 0 && (
                   <View style={styles.searchResults}>
                     {soundSearchResults.map((result) => {
                       const isAdding = busyAction === `search-add:${result.id}`;
+                      const isPreviewing = busyAction === `search-preview:${result.id}`;
 
                       return (
                         <View key={result.id} style={styles.searchResultItem}>
-                          <Text numberOfLines={2} style={styles.searchResultText}>
-                            {result.name}
-                          </Text>
-                          <Pressable
-                            disabled={busyAction !== null}
-                            onPress={() => addSoundFromSearchResult(result)}
-                            style={[styles.searchResultButton, busyAction !== null && styles.disabledButton]}
-                          >
-                            <Text style={styles.searchResultButtonText}>{isAdding ? '...' : 'Add'}</Text>
-                          </Pressable>
+                          <View style={styles.searchResultTextBlock}>
+                            <Text numberOfLines={2} style={styles.searchResultText}>
+                              {result.name}
+                            </Text>
+                          </View>
+                          <View style={styles.searchResultActions}>
+                            <Pressable
+                              disabled={busyAction !== null}
+                              onPress={() => previewSearchResult(result)}
+                              style={[styles.previewResultButton, busyAction !== null && styles.disabledButton]}
+                            >
+                              <Text style={styles.previewResultButtonText}>{isPreviewing ? '...' : 'Play'}</Text>
+                            </Pressable>
+                            <Pressable
+                              disabled={busyAction !== null}
+                              onPress={() => addSoundFromSearchResult(result)}
+                              style={[styles.searchResultButton, busyAction !== null && styles.disabledButton]}
+                            >
+                              <Text style={styles.searchResultButtonText}>{isAdding ? '...' : 'Add'}</Text>
+                            </Pressable>
+                          </View>
                         </View>
                       );
                     })}
                   </View>
                 )}
-                <TextInput
-                  accessibilityLabel="Sound name"
-                  onChangeText={setSoundName}
-                  placeholder="Sound name"
-                  style={styles.input}
-                  value={soundName}
-                />
                 <Pressable
                   disabled={busyAction !== null}
                   onPress={importSoundFromDevice}
@@ -1412,6 +1646,13 @@ export default function App() {
                   <Text style={styles.secondaryButtonText}>{busyAction === 'file' ? 'Importing...' : 'Import file'}</Text>
                 </Pressable>
 
+                <TextInput
+                  accessibilityLabel="Sound name"
+                  onChangeText={setSoundName}
+                  placeholder="Sound name for URL"
+                  style={styles.input}
+                  value={soundName}
+                />
                 <TextInput
                   accessibilityLabel="Audio URL"
                   autoCapitalize="none"
@@ -1500,32 +1741,6 @@ export default function App() {
                   <Text style={[styles.settingsRowText, styles.dangerSettingsRowText]}>Delete board</Text>
                   <Text style={styles.dangerSettingsRowText}>!</Text>
                 </Pressable>
-              </View>
-
-            <View style={styles.soundSection}>
-            <Text style={styles.sectionTitle}>Manage sounds</Text>
-            {selectedBoard.sounds.length === 0 ? (
-              <View style={styles.emptyPanel}>
-                <Text style={styles.emptyTitle}>No sounds</Text>
-              </View>
-            ) : (
-              <View style={styles.editList}>
-                {selectedBoard.sounds.map((sound) => (
-                  <View key={sound.id} style={styles.editSoundItem}>
-                    <TextInput
-                      accessibilityLabel="Sound name"
-                      onChangeText={(value) => renameSound(sound.id, value)}
-                      placeholder="Sound name"
-                      style={[styles.input, styles.editSoundInput]}
-                      value={sound.name}
-                    />
-                    <Pressable onPress={() => deleteSound(sound)} style={styles.deleteButton}>
-                      <Text style={styles.deleteButtonText}>Delete</Text>
-                    </Pressable>
-                  </View>
-                ))}
-              </View>
-            )}
             </View>
           </View>
         )}
@@ -1572,7 +1787,6 @@ export default function App() {
           >
             <Text style={styles.headerSettingsIcon}>⚙</Text>
             <Image source={UI_ASSETS.settings} style={styles.headerSettingsIconImage} />
-            <Text style={styles.headerSettingsText}>Settings</Text>
           </Pressable>
           </View>
           {selectedBoard ? renderBoardDetail() : renderBoardList()}
@@ -1613,7 +1827,6 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     borderWidth: 2,
     flexDirection: 'row',
-    gap: 6,
     justifyContent: 'center',
     minHeight: 52,
     paddingHorizontal: 10,
@@ -1669,7 +1882,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minHeight: 54,
     paddingHorizontal: 10,
-    width: 122,
+    width: 96,
   },
   headerSettingsIcon: {
     display: 'none',
@@ -1678,11 +1891,6 @@ const styles = StyleSheet.create({
     height: 25,
     tintColor: '#cbd5df',
     width: 25,
-  },
-  headerSettingsText: {
-    color: '#cbd5df',
-    fontSize: 15,
-    fontWeight: '800',
   },
   title: {
     color: '#f8fafc',
@@ -2412,6 +2620,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
+  manageSoundsToggle: {
+    alignItems: 'center',
+    backgroundColor: '#172329',
+    borderColor: '#2b383e',
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    minHeight: 72,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  manageSoundsMeta: {
+    color: '#8fa0b7',
+    fontSize: 13,
+    fontWeight: '800',
+    marginTop: 4,
+  },
+  manageSoundsChevron: {
+    color: '#42f5ff',
+    fontSize: 24,
+    fontWeight: '900',
+  },
   infoButton: {
     alignItems: 'center',
     backgroundColor: '#172329',
@@ -2430,6 +2661,25 @@ const styles = StyleSheet.create({
   searchResults: {
     gap: 8,
   },
+  searchFeedbackText: {
+    color: '#8fa0b7',
+    fontSize: 13,
+    fontWeight: '800',
+    lineHeight: 18,
+  },
+  actionNoticeText: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#123c3f',
+    borderColor: '#22dce8',
+    borderRadius: 999,
+    borderWidth: 1,
+    color: '#b7fbff',
+    fontSize: 13,
+    fontWeight: '900',
+    overflow: 'hidden',
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+  },
   searchResultItem: {
     alignItems: 'center',
     backgroundColor: '#131d22',
@@ -2443,9 +2693,34 @@ const styles = StyleSheet.create({
   },
   searchResultText: {
     color: '#f8fafc',
-    flex: 1,
     fontSize: 15,
     fontWeight: '800',
+  },
+  searchResultTextBlock: {
+    flex: 1,
+    gap: 3,
+    minWidth: 0,
+  },
+  searchResultActions: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+  },
+  previewResultButton: {
+    alignItems: 'center',
+    backgroundColor: '#1e2d34',
+    borderColor: '#42f5ff',
+    borderRadius: 999,
+    borderWidth: 1,
+    justifyContent: 'center',
+    minHeight: 42,
+    minWidth: 70,
+    paddingHorizontal: 12,
+  },
+  previewResultButtonText: {
+    color: '#42f5ff',
+    fontSize: 14,
+    fontWeight: '900',
   },
   searchResultButton: {
     alignItems: 'center',

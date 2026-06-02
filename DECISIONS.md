@@ -14,9 +14,21 @@
 - Store board `iconIndex` and `colorIndex` as small metadata fields instead of copying custom image files for logos.
 - Include board logo/color metadata in export/import so shared boards keep their visual identity.
 - De-duplicate MyInstants search options by normalized sound name because search results only expose page URLs before resolving direct audio.
+- Keep in-app search limited to MyInstants because those results match short soundboard-style sounds better than broader sources.
+- Treat MyInstants search `404` responses as empty results because the site can return `404` for queries with no matches.
+- Put `Play` beside `Add` in search results so a sound can be previewed before it is stored in the board.
+- Put `Manage sounds` above add/settings controls because active sounds and delete actions are the first thing users need in manage mode.
 - Keep board switching on the homepage only. This gives the open board more vertical space and makes `Back` the clear way to pick another board.
 - Use at most a 3-column sound pad grid in play mode. Four columns saved space but made the buttons feel too small.
 - Scale sound pads from board sound count and screen width instead of using fixed percentages. Keep `100dp` as the minimum visual pad size because it stays comfortably tappable on Android.
+- Keep in-app search MyInstants-only after testing extra sources. `soundboard.com` direct MP3s can work, but reported app errors make it a poor live source without a backend/proxy.
+- Do not add `101soundboards.com` as a live source because unauthenticated direct requests returned `403`, making it unreliable without a backend/proxy.
+- Keep de-duplication by normalized MyInstants result name and URL so already-added sounds stay hidden.
+- Keep `Manage sounds` collapsed by default because playback/add flow needs vertical space and active-sound deletion is only needed on demand.
+- Keep the header settings control icon-only to reduce header clutter, but retain the `Settings` accessibility label for screen readers and Android UI tests.
+- Keep add-sound help in one tappable `(i)` alert, but split the text by method so users can quickly choose search, file import, MyInstants URL, or direct audio URL.
+- Do not require `Sound name` before device file import. Use the picked file name as the default sound name, while still allowing a typed override.
+- Remove the file-import name override from the main add panel because browse/select should be the whole import flow; renaming remains available afterward in `Manage sounds`.
 
 ## 2026-06-01
 

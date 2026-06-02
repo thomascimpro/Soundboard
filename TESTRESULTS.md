@@ -4,6 +4,53 @@
 
 Commands:
 - Opened Expo SDK 56 docs before code changes as required by `AGENTS.md`.
+- Direct source check showed `soundboard.com` can return `200 audio/mpeg`, but it was removed from live app search after user error reports.
+- `rg -n "soundboard\.com|searchSoundboardCom|isSoundboardComHost|decodeHtmlText|101soundboards|source: 'soundboard'" App.tsx` returned no matches after removing extra live sources.
+- `npm.cmd run typecheck` passed after removing `soundboard.com` from live search.
+- Local release APK build passed with `npm.cmd run build:android:apk:local` and JDK 21 env after removing extra live sources.
+- Latest APK copied to `Soundboard-release.apk`; size is `74,511,386` bytes.
+- `adb -s emulator-5554 emu avd name` reported `Pixel_8`.
+- `adb -s emulator-5554 install -r -d Soundboard-release.apk` passed on Pixel_8.
+- Pixel_8 playback smoke test passed: opened `Starter Board`, tapped `2000 Years Later`, Android logged `audio/mpeg`, `PlaybackState PLAYING`, then `STOPPED`, with no fatal app error.
+- Opened Expo SDK 56 docs before the icon-only header settings change as required by `AGENTS.md`.
+- `npm.cmd run typecheck` passed after removing the visible header `Settings` label.
+- `rg -n "headerSettingsText|<Text style=\{styles\.headerSettingsText\}|Settings</Text>" App.tsx` returned only the Settings panel title, not the header text.
+- Local release APK build passed with `npm.cmd run build:android:apk:local` and JDK 21 env after the icon-only header settings change.
+- Latest APK copied to `Soundboard-release.apk` and `C:\Users\thoma.THOMAS\Documents\Codex\Soundboard-release.apk`; size is `74,511,290` bytes.
+- `adb -s emulator-5554 install -r -d Soundboard-release.apk` passed on Pixel_8.
+- Pixel_8 UI dump passed: visible `text="Settings"` count was `0`, while `content-desc="Settings"` count was `1`.
+- Opened Expo SDK 56 docs before the add-sound `(i)` help change as required by `AGENTS.md`.
+- `npm.cmd run typecheck` passed after splitting add-sound help by method.
+- `rg -n "Add sound help|URL help|MyInstants page URL|Direct audio URL|Import file:|Search:" App.tsx` confirmed the new help title/text and no remaining `URL help` button label.
+- Local release APK build passed with `npm.cmd run build:android:apk:local` and JDK 21 env after the help text change.
+- Latest APK copied to `Soundboard-release.apk` and `C:\Users\thoma.THOMAS\Documents\Codex\Soundboard-release.apk`; size is `74,511,578` bytes.
+- `adb -s emulator-5554 install -r -d Soundboard-release.apk` passed on Pixel_8.
+- Pixel_8 UI smoke test passed: opened a board, tapped `Manage`, tapped `(i)`, and Android UI dump showed `Add sound help` with separate `Search:`, `Import file:`, `MyInstants page URL:`, `Direct audio URL:`, and `Sound name:` instructions.
+- Opened Expo SDK 56 DocumentPicker docs before the no-name file import change as required by `AGENTS.md`.
+- `npm.cmd run typecheck` passed after making `Sound name` optional for file import.
+- `rg -n "Enter a sound name before importing|Sound name \(optional for file\)|Import file: tap Import file|optional for Import file|required for Add URL|const customName|pickedName" App.tsx` confirmed the old pre-import name requirement was removed.
+- Local release APK build passed with `npm.cmd run build:android:apk:local` and JDK 21 env after the import flow change.
+- Latest APK copied to `Soundboard-release.apk` and `C:\Users\thoma.THOMAS\Documents\Codex\Soundboard-release.apk`; size is `74,511,774` bytes.
+- `adb -s emulator-5554 install -r -d Soundboard-release.apk` passed on Pixel_8.
+- Pixel_8 import smoke test passed: tapped `Import file` with an empty `Sound name`; Android DocumentsUI opened instead of a `Sound name required` alert.
+- Pixel_8 DocumentsUI check passed: `Open from` roots showed `Downloads`.
+- Pixel_8 end-to-end file import passed: selected `/sdcard/Download/SoundboardImportTest.mp3`, the app added `SoundboardImportTest` using the file name automatically, and Android media session reported `PlaybackState PLAYING` after tapping the imported sound.
+- Opened Expo SDK 56 DocumentPicker docs before removing the file-import name input as required by `AGENTS.md`.
+- `npm.cmd run typecheck` passed after moving the `Sound name` field to the URL section only.
+- `rg -n "customName|Sound name \(optional for file\)|Sound name for URL|Sound name: only needed|const name = pickedName|Import file" App.tsx` confirmed there is no file-import name override and the URL name placeholder exists.
+- Local release APK build passed with `npm.cmd run build:android:apk:local` and JDK 21 env after the layout change.
+- Latest APK copied to `Soundboard-release.apk` and `C:\Users\thoma.THOMAS\Documents\Codex\Soundboard-release.apk`; size is `74,511,722` bytes.
+- `adb -s emulator-5554 install -r -d Soundboard-release.apk` passed on Pixel_8.
+- Pixel_8 add-sound UI dump passed: `Import file` appears directly after `Search`, and `Sound name for URL` appears below `Import file`; old `Sound name (optional for file)` text is absent.
+- Pixel_8 import picker smoke test passed: tapping `Import file` directly opened Android DocumentsUI/Downloads without a preceding name field.
+- `npm.cmd run typecheck` passed after the collapsible manage/search-source changes.
+- Node fetch check passed for `https://www.soundboard.com/search/swedish%20chef`: board page returned `200`, first `data-src` ID was found, and `https://www.soundboard.com/track/download/{id}` returned `200 audio/mpeg`.
+- Direct checks for `101soundboards.com` returned `403`, so it was not added as a live source.
+- Local release APK build passed with `npm.cmd run build:android:apk:local` and JDK 21 env after the latest changes.
+- Latest APK copied to `Soundboard-release.apk`; size is `74,516,862` bytes.
+- `adb install -r -d Soundboard-release.apk` passed on `emulator-5554`.
+- `adb mdns services` did not list `onedroid`; latest real-phone test could not run.
+- Opened Expo SDK 56 docs before code changes as required by `AGENTS.md`.
 - `npm.cmd run typecheck` passed after delete/search/player-dock changes.
 - `rg -n "Stop sound|Previous sound|Next sound|showPlayerDock|playRelativeSound" App.tsx` returned no matches after removing transport UI.
 - Local release APK build passed with `npm.cmd run build:android:apk:local` and JDK 21 env.
@@ -12,6 +59,9 @@ Commands:
 - App launch via `adb shell monkey -p com.soundboard.app -c android.intent.category.LAUNCHER 1` passed.
 
 Android UI tests:
+- Manage mode smoke test passed on emulator: `Manage sounds` is collapsed by default, then expands to show `2000 Years Later`, `Clown Honk`, `Spongebob Fail`, and `Delete` buttons.
+- No Android crash was found in logcat while toggling `Manage sounds`.
+- Search UI automation was limited by emulator keyboard/tap behavior; source fetching was verified with Node and the APK was rebuilt with explicit search submit plus keyboard dismissal.
 - MyInstants search passed: searched `spongebob`, results included `Spongebob Fail`, `Spongebob Boowomp`, and `Spongebob A Few Moments Later`.
 - Search add passed: tapped `Add` on `Spongebob Fail`; custom board count changed to added sounds.
 - Delete confirm passed: `Delete board` opened Android dialog with `CANCEL` and `DELETE`.
@@ -69,6 +119,20 @@ Android UI tests:
 - Android UI check passed for a 14-sound board: open board rendered 3 pads per row with larger pad bounds.
 - Android scroll check passed: lower rows remained reachable after swiping the soundboard list.
 - Android playback check passed from the 3-column layout: tapping a pad logged `audio/mpeg` and `PlaybackState PLAYING` with no fatal app error.
+- Opened Expo SDK 56 docs before the MyInstants-only search/preview feedback change as required by `AGENTS.md`.
+- `rg -n "Openverse|Freesound|free sound|freesound|openverse" .` returned no matches after reverting broader sound sources.
+- `npm.cmd run typecheck` passed after restoring MyInstants-only search, adding search-result preview, moving `Manage sounds` to the top, and improving no-result feedback.
+- Local release APK build passed again with `npm.cmd run build:android:apk:local`.
+- Latest APK copied to `Soundboard-release.apk` and `C:\Users\thoma.THOMAS\Documents\Codex\Soundboard-release.apk`; size is `74,509,458` bytes.
+- Pixel emulator was skipped because it was stuck/offline after restart; `onedroid` was used instead.
+- `adb -s adb-aac112e8-0D0iaE._adb-tls-connect._tcp install -r -d Soundboard-release.apk` passed on `onedroid` (`CPH2645`).
+- Android UI check on `onedroid` passed: `Manage sounds` appeared near the top of board manage mode with active sound names and visible `Delete` buttons.
+- Android MyInstants-only search passed: searching `spongebob` returned MyInstants results with `Play` and `Add`, and existing `Spongebob Fail` was not shown as an add option.
+- Android preview check passed: tapping search-result `Play` for `Spongebob Boowomp` logged `PlaybackState PLAYING` with no fatal error.
+- Android add/dedupe check passed: tapping `Add` on `Spongebob Boowomp` increased the board to `9 sounds` and removed that result from the visible add options.
+- Android no-result feedback passed after treating MyInstants `404` as empty results: searching `zzznotasound999` opened `No results` with `No MyInstants sounds found...`.
+- Android positive search after the no-result fix passed: searching `airhorn` returned `11 MyInstants sounds found` with `Play` and `Add` actions.
+- Android preview after the no-result fix produced `com.soundboard.app` audio output logs and no fatal errors.
 
 Not run:
 - `npm run lint`: no lint script exists.

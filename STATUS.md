@@ -21,13 +21,35 @@ Implemented:
 - Open soundboards no longer show the board selector rail; use `Back` to return to board selection.
 - Open soundboards now use at most 3 sound pads per row so buttons stay large enough for comfortable tapping.
 - Sound pads now scale by sound count: 1-4 sounds use larger pads and 5+ sounds use 3-column pads with a 100dp minimum.
-- Latest standalone APK was rebuilt, installed on emulator, and refreshed at `Soundboard-release.apk`.
+- In-app sound search is MyInstants-only again.
+- Search results have `Play` preview and `Add` actions.
+- Board `Manage` now shows active sounds and `Delete` controls at the top before add/settings controls.
+- MyInstants empty-search `404` pages now show clear `No results` feedback instead of a generic search failure.
+- Earlier standalone APK was rebuilt, installed on `onedroid`, and refreshed at `Soundboard-release.apk`.
+- `Manage sounds` is now collapsed by default and expands under the toggle.
+- Adding a sound now shows a short `Added` confirmation that disappears automatically.
+- Extra live sources were removed again after testing/user error reports; search is MyInstants-only.
+- `101soundboards.com` is not integrated because it returned `403` for unauthenticated direct requests.
+- Latest standalone APK was rebuilt, installed on Pixel_8 (`emulator-5554`), and refreshed at `Soundboard-release.apk`.
+- Header `Settings` is now icon-only while retaining the `Settings` accessibility label.
+- Latest standalone APK was rebuilt, installed on Pixel_8 (`emulator-5554`), and refreshed at `Soundboard-release.apk`.
+- Add-sound `(i)` help now explains each add method separately: search, preview/add, file import, MyInstants URL, direct audio URL, and sound name.
+- Latest standalone APK was rebuilt, installed on Pixel_8 (`emulator-5554`), and refreshed at `Soundboard-release.apk`.
+- Device audio import no longer requires a prefilled sound name. If the field is empty, the app uses the selected file name without its extension.
+- Latest standalone APK was rebuilt, installed on Pixel_8 (`emulator-5554`), and refreshed at `Soundboard-release.apk`.
+- The add-sound panel no longer shows a name field before `Import file`; `Sound name for URL` now appears only in the URL add section.
+- Latest standalone APK was rebuilt, installed on Pixel_8 (`emulator-5554`), and refreshed at `Soundboard-release.apk`.
 
 Risks:
 - MyInstants has no official app API here; search parses public HTML and can break if the website changes.
 - Search/add via MyInstants needs internet on the phone. Already-added URL sounds also need internet unless imported from local file.
 - Existing local user-created boards remain after APK update by design.
+- Search still depends on MyInstants public HTML and may change if MyInstants changes its pages.
 - GitHub publishing is blocked until a GitHub remote exists or GitHub CLI is installed/authenticated.
+- Existing Android UI tests can still find the header control by `content-desc="Settings"`.
+- The help alert uses Android's native alert layout; long localized help copy should be rechecked if more methods are added.
+- Expo DocumentPicker opens the Android system file picker; the app can allow browsing to Downloads, but it cannot force every Android device to start in Downloads.
+- File import no longer supports a manual name override before picking; users can still rename imported sounds from `Manage sounds`.
 
 ## 2026-06-01
 

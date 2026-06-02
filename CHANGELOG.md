@@ -18,6 +18,26 @@
 - Compacted the open soundboard grid to fit more sound pads per screen while keeping each pad tappable.
 - Added dynamic sound pad scaling: small boards get larger pads, larger boards compact down with a fixed minimum tappable size.
 - Increased the minimum sound pad size and capped large boards at 3 pads per row.
+- Restored in-app search to MyInstants only; Openverse/Freesound-style sources are not used.
+- Added a `Play` preview button beside each search result so users can listen before adding.
+- Moved `Manage sounds` to the top of board manage mode, with visible active sounds and `Delete` buttons.
+- Improved MyInstants no-result handling, including MyInstants `404` search pages as clear `No results` feedback.
+- Rebuilt and refreshed the standalone local APK at `Soundboard-release.apk`.
+- Made `Manage sounds` collapsible so the active sound list only opens when tapped.
+- Added short auto-clearing `Added` feedback after a sound is added.
+- Added similar-query fallback for searches such as pluralized sound names.
+- Removed `soundboard.com` from live search after source testing/user error reports; search is MyInstants-only again.
+- Kept `101soundboards.com` out of live search because direct unauthenticated requests returned `403`.
+- Dismissed the keyboard when search starts and made the search input submit explicitly.
+- Rebuilt and refreshed the standalone local APK at `Soundboard-release.apk`.
+- Rebuilt and refreshed the standalone local APK after removing extra live search sources.
+- Removed the visible header `Settings` label so the top-right control is gear-only while keeping the accessibility label.
+- Rebuilt and refreshed the standalone local APK at `Soundboard-release.apk`.
+- Reworked the add-sound `(i)` help into separate instructions for search, preview/add, importing files, MyInstants page URLs, direct audio URLs, and sound names.
+- Rebuilt and refreshed the standalone local APK at `Soundboard-release.apk`.
+- Changed device audio import so users can tap `Import file`, browse to Downloads, and select a file without entering a sound name first.
+- Rebuilt and refreshed the standalone local APK at `Soundboard-release.apk`.
+- Removed the `Sound name` input above `Import file`; file imports now always use the selected file name and URL adds keep their own name field.
 - Rebuilt and refreshed the standalone local APK at `Soundboard-release.apk`.
 
 ## 2026-06-01
