@@ -1,0 +1,214 @@
+# Test Results
+
+## 2026-06-02
+
+Commands:
+- Opened Expo SDK 56 docs before code changes as required by `AGENTS.md`.
+- `npm.cmd run typecheck` passed after delete/search/player-dock changes.
+- `rg -n "Stop sound|Previous sound|Next sound|showPlayerDock|playRelativeSound" App.tsx` returned no matches after removing transport UI.
+- Local release APK build passed with `npm.cmd run build:android:apk:local` and JDK 21 env.
+- Latest APK copied to `Soundboard-release.apk`; size is `74,497,518` bytes.
+- `adb install -r Soundboard-release.apk` passed on `emulator-5554`.
+- App launch via `adb shell monkey -p com.soundboard.app -c android.intent.category.LAUNCHER 1` passed.
+
+Android UI tests:
+- MyInstants search passed: searched `spongebob`, results included `Spongebob Fail`, `Spongebob Boowomp`, and `Spongebob A Few Moments Later`.
+- Search add passed: tapped `Add` on `Spongebob Fail`; custom board count changed to added sounds.
+- Delete confirm passed: `Delete board` opened Android dialog with `CANCEL` and `DELETE`.
+- Delete cancel passed: tapping `CANCEL` kept custom board `DeleteTest`.
+- Delete confirm-delete passed: tapping `DELETE` removed `DeleteTest`; home still showed `Starter Board`.
+- Player dock check passed: `Stop sound`, `Previous sound`, and `Next sound` were absent; `Volume` remained.
+- Playback passed: tapped `Spongebob Fail`; Android MediaSession/ExoPlayer logged `PlaybackState PLAYING`, `audio/mpeg`, and no fatal error.
+- Volume drag passed after hitbox fix: dragging the bar changed displayed volume from `100%` to `12%` without triggering the Android launcher.
+- Default board check passed: `Starter Board` opened with `2000 Years Later`, `Clown Honk`, and `Spongebob Fail`.
+- `npm.cmd run typecheck` passed after replacing volume drag with measured `pageX` coordinates.
+- Local release APK build passed again with `npm.cmd run build:android:apk:local`.
+- Latest APK copied to `Soundboard-release.apk`; size is `74,498,466` bytes.
+- `adb install -r Soundboard-release.apk` passed after the smooth volume update.
+- Smooth volume drag passed on Android: repeated swipes changed the displayed value `88% -> 14% -> 93% -> 52%` without leaving the app.
+- Playback after volume drag passed: tapped `2000 Years Later`; Android logged `PlaybackState PLAYING` and `audio/mpeg`, with no fatal error.
+- `npm.cmd run typecheck` passed after making `Starter Board` editable/deletable and adding board logo/color metadata.
+- Local release APK build passed again with `npm.cmd run build:android:apk:local`.
+- Latest APK copied to `Soundboard-release.apk`; size is `74,502,590` bytes.
+- `adb install -r Soundboard-release.apk`, `adb shell pm clear com.soundboard.app`, and standalone launch passed on `emulator-5554`.
+- Fresh standalone APK check passed: seeded `Starter Board` appeared with `3 sounds`.
+- Starter board manage check passed: opened `Starter Board`; `Manage` was visible in play view and header `Settings` opened edit mode.
+- Starter board edit check passed: `Board settings`, `Board name`, `LOGO`, `COLOR`, `Export board`, and `Import board` were visible.
+- Starter board rename check passed: board name field changed from `Starter Board` to `Starter Board_Edit`.
+- Starter board delete check passed: `Delete board` opened Android confirm dialog for the renamed Starter board.
+- Starter board delete persistence passed: after tapping `DELETE`, home showed `No soundboards yet`; after force-stop/relaunch, `Starter Board` did not reappear.
+- `npm.cmd run typecheck` passed after filtering already-added sounds from search options.
+- Local release APK build passed again with `npm.cmd run build:android:apk:local`.
+- Latest APK copied to `Soundboard-release.apk`; size is `74,503,310` bytes.
+- Latest APK was also copied outside the project folder to `C:\Users\thoma.THOMAS\Documents\Codex\Soundboard-release.apk`.
+- `adb install -r -d Soundboard-release.apk`, `adb shell pm clear com.soundboard.app`, and standalone launch passed on `emulator-5554`.
+- Search de-duplication passed on Android: searching `spongebob` in `Starter Board` did not show existing sound `Spongebob Fail` as an add option.
+- Search UI remained usable after de-duplication: MyInstants search still returned addable options for non-existing results.
+- GitHub publish check failed: no git remote is configured and `gh auth status` failed because GitHub CLI is not installed/in PATH.
+- Opened Expo SDK 56 docs before the compact-grid/detail-boardselector change as required by `AGENTS.md`.
+- `npm.cmd run typecheck` passed after removing the detail board rail and compacting the sound grid.
+- Local release APK build passed again with `npm.cmd run build:android:apk:local`.
+- Latest APK copied to `Soundboard-release.apk` and `C:\Users\thoma.THOMAS\Documents\Codex\Soundboard-release.apk`; size is `74,503,266` bytes.
+- `adb install -r -d Soundboard-release.apk`, `adb shell pm clear com.soundboard.app`, and standalone launch passed on `emulator-5554`.
+- Android UI check passed: homepage still shows board selection; open `Starter Board` no longer contains a detail `HorizontalScrollView` board selector.
+- Android UI check passed: `Back` returns from the open board to the homepage board selector.
+- Android UI check passed: compact sound pads are visible and tappable in the open board; tapping `2000 Years Later` initialized ExoPlayer and loaded `audio/mpeg` without a fatal app error.
+- Opened Expo SDK 56 docs before the dynamic sound pad scaling change as required by `AGENTS.md`.
+- `npm.cmd run typecheck` passed after adding dynamic sound pad sizing.
+- Local release APK build passed again with `npm.cmd run build:android:apk:local`.
+- Latest APK copied to `Soundboard-release.apk` and `C:\Users\thoma.THOMAS\Documents\Codex\Soundboard-release.apk`; size is `74,504,142` bytes.
+- `adb install -r -d Soundboard-release.apk`, `adb shell pm clear com.soundboard.app`, and standalone launch passed on `emulator-5554`.
+- Android UI check passed for a 3-sound board: default `Starter Board` rendered larger 2-column pads.
+- Android UI check passed for a 14-sound board: added MyInstants search results through the app, then the board rendered compact 4-column pads while keeping each pad tappable.
+- Android playback check passed from the 14-sound compact layout: tapping a pad logged `audio/mpeg` and `PlaybackState PLAYING` with no fatal app error.
+- Opened Expo SDK 56 docs before the 3-column/min-size tuning change as required by `AGENTS.md`.
+- `npm.cmd run typecheck` passed after increasing the minimum pad size and capping the grid at 3 columns.
+- Local release APK build passed again with `npm.cmd run build:android:apk:local`.
+- Latest APK copied to `Soundboard-release.apk` and `C:\Users\thoma.THOMAS\Documents\Codex\Soundboard-release.apk`; size is `74,504,130` bytes.
+- `adb install -r -d Soundboard-release.apk` passed on `emulator-5554` without clearing app data, preserving the 14-sound board.
+- Android UI check passed for a 14-sound board: open board rendered 3 pads per row with larger pad bounds.
+- Android scroll check passed: lower rows remained reachable after swiping the soundboard list.
+- Android playback check passed from the 3-column layout: tapping a pad logged `audio/mpeg` and `PlaybackState PLAYING` with no fatal app error.
+
+Not run:
+- `npm run lint`: no lint script exists.
+- `npm test`: no test script exists.
+
+## 2026-06-01
+
+Commands:
+- `npx create-expo-app@latest . --template blank-typescript --yes` passed, with Node engine warnings.
+- `npx expo install expo-audio expo-document-picker expo-file-system @react-native-async-storage/async-storage` passed, with Node engine warnings.
+- `npx tsc --noEmit` passed.
+- `npx expo config --type public` passed, with Node version warning.
+- `npm run android -- --non-interactive` failed: local Node is unsupported, `--non-interactive` is not supported by Expo start, and no Android device/emulator was available.
+- `npm run typecheck` passed.
+- `npm.cmd run typecheck` passed after adding bundled interface sounds.
+- `npx.cmd expo export --platform android --output-dir .expo-export-test` passed after adding `ogg` to Metro assets; export listed six bundled interface sound files.
+- `npx.cmd expo export --platform android --output-dir .expo-export-test` passed after UI restyle.
+- MyInstants page resolve check passed: `https://www.myinstants.com/nl/instant/among-us-role-reveal-sound-34956/` produced `https://www.myinstants.com/media/sounds/among-us-role-reveal-sound.mp3`, `HEAD` returned `200` and `audio/mpeg`.
+- `npm.cmd run typecheck` passed after MyInstants URL resolving and local APK script changes.
+- `npx.cmd expo export --platform android --output-dir .expo-export-test` passed after MyInstants URL resolving; export listed the same 12 bundled assets.
+- `java -version` returned Java 8 (`1.8.0_491`), which is too old for the current Expo/Android local build toolchain.
+- `node -v` returned `v24.16.0`.
+- Local debug APK build passed after setting `JAVA_HOME` to JDK 21, but the debug APK was rejected for sharing because it required Metro.
+- Local release APK build passed with `.\gradlew.bat assembleRelease`; it bundled `index.android.bundle` and 12 assets.
+- Release APK installed and launched on emulator package `com.soundboard.app`.
+- Standalone APK copied to `Soundboard-release.apk`.
+- Standalone APK UI test passed: cleared app data, created a board, added a MyInstants page URL, reopened app, board persisted with `1 sound`.
+- Playback test passed: tapped the added sound button, UI showed playing status, Android media session logged `PlaybackState PLAYING`, then `STOPPED` after the clip.
+- UI redesign checks passed: `npm.cmd run typecheck`, Android export, local release APK build, emulator install, home screenshot, board detail screenshot, and sound pad play state screenshot.
+- Modern playback-first UI checks passed: home list opens boards directly, create panel is hidden behind `+`, empty custom board shows `... Manage`, edit mode shows add/rename/delete controls, MyInstants URL add passed, custom sound playback logged `PlaybackState PLAYING` and `STOPPED`.
+- `npx.cmd expo config --type public` passed after removing unnecessary font config.
+- `npx eas-cli@latest --version` passed.
+- `npm run build:android:apk -- --non-interactive` reached EAS CLI and failed because Expo login/`EXPO_TOKEN` is required.
+- `adb devices` failed from PATH, then passed with Android SDK absolute path.
+- `emulator -list-avds` failed from PATH, then found `Pixel_8` with Android SDK absolute path.
+- `npm run web -- --port 8081` failed because optional web dependencies `react-dom` and `react-native-web` are not installed.
+- Android Expo Go smoke test on `Pixel_8` passed with `exp://10.0.2.2:8081`.
+- `npm.cmd run typecheck` passed after the final modern UI refactor.
+- `npx.cmd expo export --platform android --output-dir .expo-export-test-ui-final` passed; export bundled the six built-in `.ogg` sounds.
+- Latest local release APK was copied from `android/app/build/outputs/apk/release/app-release.apk` to `Soundboard-release.apk`.
+- `adb install -r Soundboard-release.apk`, `adb shell pm clear com.soundboard.app`, and `adb shell monkey -p com.soundboard.app -c android.intent.category.LAUNCHER 1` passed on `emulator-5554`.
+- Fresh standalone APK UI check passed: home showed `1 boards`, `6 sounds`, `Create soundboard`, and `Interface Sounds`.
+- Built-in playback passed: opened `Interface Sounds`, tapped `Click A`, UI showed `Playing Click A.`, `NOW PLAYING`, and sound pad state `ON`.
+- Custom flow passed: created `ModernBoard`, added MyInstants page URL `https://www.myinstants.com/nl/instant/among-us-role-reveal-sound-34956/`, and edit view showed `1 sound`, `Among`, and `Delete`.
+- Persistence passed: relaunched standalone APK and home showed `2 boards`, `7 sounds`, `ModernBoard`, and `1 sound`.
+- Custom URL playback passed: opened `ModernBoard`, tapped `Among`, UI showed `Playing Among.`, `NOW PLAYING`, and Android log showed `PlaybackState {state=PLAYING(3)}` then `STOPPED(1)`.
+- `npx.cmd expo install expo-sharing` passed and installed SDK 56 compatible `expo-sharing`.
+- `npm.cmd run typecheck` passed after board export/import changes.
+- `npx.cmd expo export --platform android --output-dir .expo-export-test-board-io` passed; export bundled the six built-in `.ogg` sounds.
+- Local release APK build passed after export/import changes with `npm.cmd run build:android:apk:local` and JDK 21 env.
+- Latest APK copied to `Soundboard-release.apk`; size is `72,131,771` bytes.
+- `adb install -r Soundboard-release.apk` passed after export/import changes.
+- Homepage settings smoke test passed: `Settings` panel showed `Import board`, while board list remained visible below.
+- Custom board manage smoke test passed: `ModernBoard` `Manage` showed `Board settings`, `Export board`, `Import board`, `Manage sounds`, `Among`, and `Delete`.
+- Export smoke test passed: tapping `Export board` opened Android resolver with `Sharing 1 file` and file `ModernBoard.soundboard.json`.
+- `npm.cmd run typecheck` passed after visual playback progress changes.
+- `npx.cmd expo export --platform android --output-dir .expo-export-test-progressbar` passed; export bundled the six built-in `.ogg` sounds.
+- Local release APK build passed after progress bar changes with `npm.cmd run build:android:apk:local` and JDK 21 env.
+- Latest APK copied to `Soundboard-release.apk`; size is `72,132,443` bytes.
+- `adb install -r Soundboard-release.apk` passed after progress bar changes.
+- Progress bar smoke test passed: opened `Interface Sounds`, tapped `Click A`, and UI hierarchy showed a non-text progress view inside the sound pad.
+- `npm.cmd run typecheck` passed after removing redundant UI/status text and old unused playback styles.
+- Android visual smoke test passed: home and player screenshots showed the dark soundboard UI, colored pads, and visual progress bar without `PLAY`, `NOW PLAYING`, `ON`, source, sample, custom, or local labels.
+- Local release APK build passed after the final visual cleanup with `npm.cmd run build:android:apk:local`.
+- Latest APK copied to `Soundboard-release.apk`; size is `72,131,367` bytes.
+- `adb install -r Soundboard-release.apk` and launch via `monkey` passed after the final visual cleanup.
+- `npm.cmd run typecheck` passed after adding UTF-8 BOM tolerance for `.soundboard.json` imports.
+- Local release APK build passed after the import robustness fix with `npm.cmd run build:android:apk:local`.
+- Latest APK copied to `Soundboard-release.apk`; size is `72,131,431` bytes.
+- `adb install -r Soundboard-release.apk` passed after the import robustness fix.
+- Full Android flow passed on standalone APK: created `TestBoard`, added MyInstants page URL as `UrlSound`, imported `soundboard-test-click-a.ogg` from Android Downloads as `FileSound`, and both sounds appeared on the board.
+- Playback passed for `UrlSound`: Android media session reached `STOPPED` at about `4631 ms`.
+- Playback passed for `FileSound`: Android media session reached `STOPPED` at about `374 ms`.
+- Export passed: `Export board` opened Android resolver with `Sharing 1 file` and `TestBoard.soundboard.json`.
+- Import passed: homepage `Settings` > `Import board` selected `ImportedBoard.soundboard.json`; imported board opened with `ImportedFile`, `ImportedUrl`, and `2 sounds`.
+- Imported playback passed: `ImportedFile` reached `STOPPED` at about `374 ms`; `ImportedUrl` reached `STOPPED` at about `4631 ms`.
+- Persistence passed after force-stop/relaunch: home showed `3 boards`, `10 sounds`, `ImportedBoard`, and `TestBoard`.
+- `npm.cmd run typecheck` passed after the neon reference UI pass.
+- Local release APK build passed after the neon reference UI pass with `npm.cmd run build:android:apk:local` and JDK 21 env.
+- Latest APK copied to `Soundboard-release.apk`; size is `72,136,983` bytes.
+- `adb install -r Soundboard-release.apk`, `adb shell pm clear com.soundboard.app`, and launch via `monkey` passed on `emulator-5554`.
+- Android visual smoke test passed: home showed the neon waveform header, board rail, board card, and bottom `Add` dock; `Interface Sounds` showed 3-column neon sound pads and the player dock.
+- Built-in playback passed after the neon UI pass: tapped `Click A` and Android media session reported `PlaybackState {state=PLAYING(3)}`.
+- Transport smoke test passed after the neon UI pass: `Previous sound`, `Next sound`, and `Stop sound` were tapped without crash.
+- `npm.cmd run typecheck` passed after replacing the app icon assets.
+- `npx.cmd expo config --type public` passed and reported the dark adaptive icon background `#05090B`.
+- Local release APK build passed after the app icon update with `npm.cmd run build:android:apk:local` and JDK 21 env.
+- Latest APK copied to `Soundboard-release.apk`; size is `72,528,419` bytes.
+- `adb install -r Soundboard-release.apk` and launch via `monkey` passed after the app icon update.
+- `npm.cmd run typecheck` passed after adding the in-app image assets and volume/settings/back changes.
+- Local release APK build passed after the in-app asset UI pass with `npm.cmd run build:android:apk:local` and JDK 21 env.
+- Latest APK copied to `Soundboard-release.apk`; size is `74,490,934` bytes.
+- `adb install -r Soundboard-release.apk`, `adb shell pm clear com.soundboard.app`, and launch via `monkey` passed after the asset UI pass.
+- Android visual smoke test passed: detail screen showed the new PNG pad icons, clear header `Back`, clearer `Settings`, fixed one-line header title, and revised volume bar.
+- Settings smoke test passed: homepage `Settings` opened a bordered panel with large `Import board` and `New board` rows.
+- Volume smoke test passed: tapping the bar changed the visual value to `35%`; playback still started afterwards.
+- Playback smoke test passed after volume change: tapping a built-in sound reported `PlaybackState {state=PLAYING(3)}`.
+- `npm.cmd run typecheck` passed after the large-board scrolling fix.
+- Local release APK build passed after the large-board scrolling fix with `npm.cmd run build:android:apk:local` and JDK 21 env.
+- Latest APK copied to `Soundboard-release.apk`; size is `74,491,194` bytes.
+- `adb install -r Soundboard-release.apk`, `adb shell pm clear com.soundboard.app`, and launch via `monkey` passed on `emulator-5554`.
+- Large-board import passed: homepage `Settings` > `Import board` selected `Stress24Local.soundboard.json`, which opened `Stress 24 Local` with `24 sounds`.
+- Large-board scroll passed: the grid scrolled to the bottom and showed `Stress 22`, `Stress 23`, and `Stress 24` fully above the fixed player dock.
+- Large-board playback passed: `Stress 01`, `Stress 12`, and `Stress 24` were tapped; Android media session reached `STOPPED` at about `370 ms` for local embedded audio.
+- Large-board transport smoke test passed: `Previous sound`, `Next sound`, and `Stop sound` remained visible and tappable at the bottom of the 24-sound board.
+- MyInstants default URL resolve check passed for the three requested pages:
+  `spongebob-2000-years-later-401` -> `https://www.myinstants.com/media/sounds/spongebob-2000-years-later-2019-download-link.mp3`;
+  `clown-honk-sound-58309` -> `https://www.myinstants.com/media/sounds/clown-honk-sound.mp3`;
+  `spongebob-fail-11236` -> `https://www.myinstants.com/media/sounds/spongebob-fail.mp3`.
+- `npm.cmd run typecheck` passed after replacing the default board and compacting the player dock.
+- Local release APK build passed after the compact dock/default-board update with `npm.cmd run build:android:apk:local` and JDK 21 env.
+- Latest APK copied to `Soundboard-release.apk`; size is `74,492,106` bytes.
+- `adb install -r Soundboard-release.apk`, `adb shell pm clear com.soundboard.app`, and launch via `monkey` passed on `emulator-5554`.
+- Fresh standalone APK UI check passed: home showed `Starter Board`, `1 boards`, and `3 sounds`; `Interface Sounds` and stress boards were absent.
+- Default board detail check passed: opened `Starter Board` and saw `2000 Years Later`, `Clown Honk`, and `Spongebob Fail`.
+- Default URL playback passed: tapping `2000 Years Later` reached Android `PlaybackState STOPPED` at about `3585 ms` after buffering.
+- Compact controls smoke test passed: `Previous sound`, `Stop sound`, `Next sound`, `Top`, `Hide controls`, and `Show controls` were visible/tappable without crash.
+- URL help check passed: custom board edit mode showed the `i` button and opened an alert explaining MyInstants page URL and direct audio URL input.
+
+Android buttons tested:
+- `Create`: created soundboard `T`.
+- `Open`: opened soundboard detail.
+- `Back`: returned to soundboard list.
+- `Import from device`: with empty sound name showed validation alert; with sound name opened Android file picker.
+- `Add URL`: with empty sound name showed validation alert; with direct MP3 URL added a sound.
+- `Settings`: opened homepage settings panel.
+- `Import board`: button visible on homepage settings and board settings.
+- `Export board`: opened native Android share sheet for `.soundboard.json`.
+- Sound button: tapped and status changed to playing.
+- Persistence: force-stopped Expo Go, relaunched app, soundboard `T` with `1 sound` remained.
+
+Android notes:
+- First emulator run was killed by Android low-memory killer. Retest used `Pixel_8` started with `-memory 4096`.
+- ADB text input typed only partial mixed-case board name in this emulator, so the created test board is named `T`.
+
+Not run:
+- `npm run lint`: no lint script exists.
+- `npm test`: no test script exists.
+
+Manual check needed:
+- Upgrade Node to a supported version.
+- For repeat local APK builds, ensure `JAVA_HOME` points to JDK 21 if PATH still resolves Java 8.
+- Select a real local audio file from device storage; emulator file picker opened but had no audio files.
